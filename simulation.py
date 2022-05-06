@@ -1,32 +1,27 @@
-"""
-Inverted Pendulum LQR control
-author: Trung Kien - letrungkien.k53.hut@gmail.com
-"""
-
 import math
-import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-###### Model parameters ######
+################ Model parameters ###################
 l_bar = 2.0  # length of bar
 m = 0.3  # [kg]
 g = 9.8  # [m/s^2]
-##############################
+#####################################################
 
 
-###### simaulation parametre ###########
+################ simaulation parametre ##############
 dt = 0.1  # time tick [s]
 sim_time = 5.0  # simulation time
 angle_max = 45 
+show_animation=True
 X0 = np.array([
         0.0, # x
         0.0, # dx/dt
-        0.3, # tehta
+        0.1, # tehta
         0.0  # dtheta/dt
     ])
-########################################
+#####################################################
 
 ################# fonction dérivé ###################
 def F (t,X,d2x):
@@ -35,46 +30,53 @@ def F (t,X,d2x):
 
 #####################################################
 
-
-
-show_animation = True
 def main():
-    X = np.copy(X0)
-    time = 0.0
+    simu=simulation()
+    bol_continue=True
+    while bol_continue:
+        bol_continue=simu.step(-0.5)
+    simu.finish()
 
-    while sim_time > time and math.degrees(X[2])<angle_max and math.degrees(X[2])>-angle_max:
-        time += dt
-        X=calcul_Runge_Kutta(time,X)
-        if show_animation:
+class simulation:
+    def __init__(self,X=X0,show=show_animation):
+        self.X=np.copy(X)
+        self.X_historique=np.copy([X])
+        self.show_animation=show
+        self.time=0.0
+    
+    def step(self,dx2):
+        self.X=calcul_Runge_Kutta(self.time,self.X,dx2)
+        self.X_historique=np.append(self.X_historique,[self.X],axis = 0 )
+        if self.show_animation:
             plt.clf()
-            px = float(X[0])
-            theta = float(X[2])
+            px = float(self.X[0])
+            theta = float(self.X[2])
             plot_cart(px, theta)
-            plt.xlim([-5.0, 2.0])
             plt.pause(0.001)
+        self.time += dt
+        if sim_time < self.time or math.degrees(self.X[2])>angle_max or math.degrees(self.X[2])<-angle_max:
+            return False
+        return True
+    
+    def finish(self):
+        print("Finish")
+        print(f"x={float(self.X[0]):.2f} [m] , theta={math.degrees(self.X[2]):.2f} [deg]")
+        if show_animation:
+            plt.show()
 
-    print("Finish")
-    print(f"x={float(X[0]):.2f} [m] , theta={math.degrees(X[2]):.2f} [deg]")
-    if show_animation:
-        plt.show()
-
-def calcul_Runge_Kutta (time,X):
-    d2x=calcul_d2x()
+def calcul_Runge_Kutta (time,X,d2x):
     k1=F(time,X,d2x)*dt
     k2=F(time+dt/2,X+k1/2,d2x)*dt
     k3=F(time+dt/2,X+k2/2,d2x)*dt
     k4=F(time+dt,X+k3,d2x)*dt
     return X+(k1+2*k2+2*k3+k4)/6
 
-
-def calcul_d2x():
-    return -4.
-
 def plot_cart(xt, theta):
     cart_w = 1.0 # longeur du card
     cart_h = 0.5 # hauteur du card
     radius = 0.1
 
+    plt.xlim([-2.0, 2.0])
     # Cordonée des point de la card
     cx = np.array([-cart_w / 2.0, cart_w / 2.0, cart_w /2.0, -cart_w / 2.0, -cart_w / 2.0])
     cy = np.array([0.0, 0.0, cart_h, cart_h, 0.0])
@@ -112,7 +114,7 @@ def plot_cart(xt, theta):
         lambda event: [exit(0) if event.key == 'escape' else None])
 
     plt.axis("equal")
-
+    plt.pause(0.001)
 
 if __name__ == '__main__':
     main()
