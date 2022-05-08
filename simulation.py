@@ -31,13 +31,13 @@ def F (t,X,d2x):
 #####################################################
 
 def main():
-    simu=simulation()
+    simu=Simulation()
     bol_continue=True
     while bol_continue:
         bol_continue=simu.step(-0.5)
     simu.finish()
 
-class simulation:
+class Simulation:
     def __init__(self,X=X0,show=show_animation):
         self.X=np.copy(X)
         self.X_historique=np.copy([X])
