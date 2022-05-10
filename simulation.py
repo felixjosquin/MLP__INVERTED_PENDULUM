@@ -1,5 +1,5 @@
 import math
-
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -10,61 +10,43 @@ g = 9.8  # [m/s^2]
 #####################################################
 
 
-################ simaulation parametre ##############
-dt = 0.1  # time tick [s]
-sim_time = 5.0  # simulation time
-angle_max = 45 
-show_animation=True
-X0 = np.array([
-        0.0, # x
-        0.0, # dx/dt
-        0.1, # tehta
-        0.0  # dtheta/dt
-    ])
-#####################################################
-
 ################# fonction dérivé ###################
 def F (t,X,d2x):
     d2theta=(g*math.sin(X[2])+d2x*math.cos(X[2]))/l_bar
     return np.array([X[1],d2x,X[3],d2theta])
-
 #####################################################
 
-def main():
-    simu=Simulation()
-    bol_continue=True
-    while bol_continue:
-        bol_continue=simu.step(-0.5)
-    simu.finish()
-
 class Simulation:
-    def __init__(self,X=X0,show=show_animation):
+    def __init__(self,X,dt,show,angle_max=45):
         self.X=np.copy(X)
         self.X_historique=np.copy([X])
         self.show_animation=show
         self.time=0.0
+        self.dt=dt
+        self.angle_max=angle_max
     
     def step(self,dx2):
-        self.X=calcul_Runge_Kutta(self.time,self.X,dx2)
-        self.X_historique=np.append(self.X_historique,[self.X],axis = 0 )
-        if self.show_animation:
-            plt.clf()
-            px = float(self.X[0])
-            theta = float(self.X[2])
-            plot_cart(px, theta)
-            plt.pause(0.001)
-        self.time += dt
-        if sim_time < self.time or math.degrees(self.X[2])>angle_max or math.degrees(self.X[2])<-angle_max:
-            return False
-        return True
+        self.X=calcul_Runge_Kutta(self.time,self.X,dx2,self.dt)
+        self.X_historique=np.append(self.X_historique,[self.X],axis = 0 )   
+        self.time += self.dt      
+        time.sleep(0.05) 
+        return abs(math.degrees(self.X[2]))<self.angle_max
+    
+    def draw(self):
+        plt.clf()
+        px = float(self.X[0])
+        theta = float(self.X[2])
+        plot_cart(px, theta)
+        plt.pause(0.05)
     
     def finish(self):
         print("Finish")
         print(f"x={float(self.X[0]):.2f} [m] , theta={math.degrees(self.X[2]):.2f} [deg]")
-        if show_animation:
-            plt.show()
+    
+    def get_input(self):
+        return self.X
 
-def calcul_Runge_Kutta (time,X,d2x):
+def calcul_Runge_Kutta (time,X,d2x,dt):
     k1=F(time,X,d2x)*dt
     k2=F(time+dt/2,X+k1/2,d2x)*dt
     k3=F(time+dt/2,X+k2/2,d2x)*dt
@@ -115,6 +97,19 @@ def plot_cart(xt, theta):
 
     plt.axis("equal")
     plt.pause(0.001)
+
+def main():
+    X0 = np.array([
+        0.0, # x
+        0.0, # dx/dt
+        0.1, # tehta
+        0.0  # dtheta/dt
+    ])
+    simu=Simulation(X0,0.05,True,45)
+    bol_continue=True
+    while bol_continue:
+        bol_continue=simu.step(-2.5)
+    simu.finish()
 
 if __name__ == '__main__':
     main()

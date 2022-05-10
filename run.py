@@ -4,17 +4,31 @@ from trainer import Trainer
 
 import json
 import threading
+import numpy as np
 
 
-simu = Simulation()
+################ simaulation parametre ##############
+dt = 0.05  # time tick [s]
+sim_time = 5.0  # simulation time
+angle_max = 45 
+show_animation=True
+X0 = np.array([
+        0.0, # x
+        0.0, # dx/dt
+        0.1, # tehta
+        0.0  # dtheta/dt
+    ])
+#####################################################
+
+
+simu = Simulation(X0,dt,True,angle_max)
 HL_size= 10 # nbre neurons of Hiden layer
-network = NN(3, HL_size, 2)
+network = NN(3, HL_size, 1)
 
 choice = input('Do you want to load previous network? (y/n) --> ')
 if choice == 'y':
     with open('last_w.json') as fp:
         json_obj = json.load(fp)
-
     for i in range(3):
         for j in range(HL_size):
             network.wi[i][j] = json_obj["input_weights"][i][j]
@@ -33,36 +47,12 @@ if choice == 'y':
 elif choice == 'n':
     trainer.training = False
 
-continue_running = True
-while(continue_running):
+thread = threading.Thread(target=trainer.train)
+trainer.running = True
+thread.start()
 
-    thread = threading.Thread(target=trainer.rain, args=(target,))
-    trainer.running = True
-    thread.start()
-
-    #Ask for stop running
-    input("Press Enter to stop the current training")
-    trainer.running = False
-    choice = ''
-    while choice!='y' and choice !='n':
-        choice = input("Do you want to continue ? (y/n) --> ")
-
-    if choice == 'y':
-        choice_learning = ''
-        while choice_learning != 'y' and choice_learning !='n':
-            choice_learning = input('Do you want to learn ? (y/n) --> ')
-        if choice_learning =='y':
-            trainer.training = True
-        elif choice_learning == 'n':
-            trainer.training = False
-        target = input("Move the robot to the initial point and enter the new target : x y radian --> ")
-        target = target.split()
-        for i in range(len(target)):
-            target[i] = float(target[i])
-        print('New target : [%d, %d, %d]'%(target[0], target[1], target[2]))
-    elif choice == 'n':
-        continue_running = False
-
+while (trainer.running):
+    trainer.simu.draw()
 
 json_obj = {"input_weights": network.wi, "output_weights": network.wo}
 with open('last_w.json', 'w') as fp:

@@ -3,7 +3,6 @@
 
 import math
 import random
-import string
 
 class NN:
   def __init__(self, NI, NH, NO):
