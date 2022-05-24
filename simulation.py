@@ -11,8 +11,8 @@ g = 9.8  # [m/s^2]
 
 ################ simaulation parametre ##############
 dt = 0.05  # time tick [s]
-sim_max = 30.0  # simulation time
-angle_max = 90 
+sim_max = 20.0  # simulation time
+angle_max = 90
 #####################################################
 
 
@@ -26,14 +26,14 @@ class Simulation:
     def __init__(self,X0,register):
         self.X=np.copy(X0)
         self.time=0.0
-        self.historique=np.append(np.copy(X0),[self.time],axis=0)
+        self.historique=np.append(np.copy(X0),[self.time,0.0],axis=0)
         self.register=register
         
     
     def step(self,dx2):
         self.X=calcul_Runge_Kutta(self.time,self.X,dx2,dt)
         self.time += dt
-        arr=np.append(np.copy(self.X),[self.time],axis=0)
+        arr=np.append(np.copy(self.X),[self.time,dx2],axis=0)
         self.historique=np.c_[self.historique,arr] 
         return (abs(self.X[2])<math.radians(angle_max)) and (self.time<=sim_max)
     
