@@ -2,9 +2,9 @@ import time
 import math
 import simulation 
 
-acc_x_const=10.
-acc_theta_const=math.radians(20.)
-theta_const=math.radians(90.)
+acc_x_const=40.
+acc_theta_const=math.radians(100.)
+theta_const=math.radians(20.)
 
 
 class Trainer:
