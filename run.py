@@ -16,7 +16,7 @@ import math
 #         0.0  # dtheta/dt
 #     ])
 
-theta_max=math.radians(80)
+theta_0_max=math.radians(70)
 
 HL_size= 10 # nbre neurons of Hiden layer
 network = NN(2, HL_size, 1)
@@ -27,7 +27,7 @@ nb_entrainement=0
 nb_succes_affile=0  
 
 while continue_train:
-    X0=np.array([0,0,2*theta_max*(random.random()-0.5),0])
+    X0=np.array([0,0,2*theta_0_max*(random.random()-0.5),0])
     simu = Simulation(X0,False)
     trainer = Trainer(simu, network)
     trainer.training = True
@@ -46,7 +46,7 @@ while continue_train:
         print(f"Stabilité non trouvé aprés {nb_entrainement} essaie")
 
 ################### AI on one exemple #####################
-X0=np.array([0,0,0.9*theta_max,0])
+X0=np.array([0,0,0.9*theta_0_max,0])
 simu = Simulation(X0,True)
 trainer = Trainer(simu, network)
 trainer.training = False

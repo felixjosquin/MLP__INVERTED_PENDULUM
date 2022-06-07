@@ -1,4 +1,0 @@
-Malgré le fais que ce soit un probléme non linéaire, 
-en fesant l'aproximation des petits angles, il peut être résolut comme un problème linéaire et garder la stabilité à l'aide d'un correcteur PID.
-Mais la choix de faire une aproximation de petits angles n'offre pas un choix ne permet d'être stable avec des angles initiaux importants.
-C'est pourquoi une commande par réseaux de neuronnes permets de trouver une solution non linéaire et permet potentiellement de meilleurs résultats.

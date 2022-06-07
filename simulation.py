@@ -12,7 +12,7 @@ g = 9.8  # [m/s^2]
 ################ simaulation parametre ##############
 dt = 0.05  # time tick [s]
 sim_max = 20.0  # simulation time
-angle_max = 100
+angle_max = 150
 #####################################################
 
 
@@ -40,7 +40,7 @@ class Simulation:
     def finish(self):
         if self.register:
             np.savetxt('data/historique.csv', self.historique, delimiter = ';') 
-        print(f"theta 0={math.degrees(self.historique[2,0])} [m] , theta={math.degrees(self.X[2]):.2f} [deg] , time={self.time:.2f} [s]")
+        print(f"theta 0={math.degrees(self.historique[2,0])} [deg] , theta={math.degrees(self.X[2]):.2f} [deg] , time={self.time:.2f} [s]")
     
     def get_input(self):
         return self.X

@@ -3,8 +3,8 @@ import math
 import simulation 
 
 acc_x_const=40.
-acc_theta_const=math.radians(100.)
-theta_const=math.radians(20.)
+acc_theta_const=math.radians(170.)
+theta_const=math.radians(90.)
 
 
 class Trainer:
