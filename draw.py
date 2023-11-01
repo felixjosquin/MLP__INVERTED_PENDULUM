@@ -2,16 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from simulation import l_bar, dt
-import time
 
 fps_anim = 18
 
 
 class Draw:
-    def __init__(self, X):
+    def __init__(self, X, forces):
         self.theta = X[:, 0]
         self.x = X[:, 2]
+        self.dtheta = X[:, 1]
+        self.dx = X[:, 3]
         self.time = np.array([i * dt for i in range(len(X))])
+        self.forces = forces
         self.run_simu = True
 
     def draw_cart(self, i=0):
@@ -34,7 +36,7 @@ class Draw:
         ax_dtheta = plt.subplot2grid((3, 2), (1, 0))
         ax_x = plt.subplot2grid((3, 2), (1, 1))
         ax_dx = plt.subplot2grid((3, 2), (2, 0))
-        ax_d2x = plt.subplot2grid((3, 2), (2, 1))
+        ax_forces = plt.subplot2grid((3, 2), (2, 1))
 
         ax_theta.plot(self.time, np.rad2deg(self.theta))
         ax_theta.set_title("Theta [deg]")
@@ -48,8 +50,12 @@ class Draw:
         ax_dx.plot(self.time, self.dx)
         ax_dx.set_title("dx/dt [m/s]")
 
-        ax_d2x.plot(self.time, self.d2x)
-        ax_d2x.set_title("d2x/dt2 [m/s]")
+        x, y = [], []
+        for force, dt_command in self.forces:
+            x += [x[-1], x[-1] + dt_command] if len(x) != 0 else [0, dt_command]
+            y += [force, force]
+        ax_forces.plot(x, y)
+        ax_forces.set_title("Force [N]")
 
         plt.gcf().canvas.mpl_connect(
             "key_release_event",
