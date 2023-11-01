@@ -66,9 +66,9 @@ class Draw:
     def plot_cart(self, i):
         xt, theta, time = self.x[i], self.theta[i], self.time[i]
 
-        cart_w = 1.0  # longeur du card
-        cart_h = 0.5  # hauteur du card
-        radius = 0.1
+        cart_w = 0.3  # longeur du card
+        cart_h = 0.1  # hauteur du card
+        radius = 0.02
 
         cx = np.array(
             [-cart_w / 2.0, cart_w / 2.0, cart_w / 2.0, -cart_w / 2.0, -cart_w / 2.0]

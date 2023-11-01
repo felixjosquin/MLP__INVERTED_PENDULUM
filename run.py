@@ -7,25 +7,27 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-dt_command = 0.04
+dt_command = 0.005
 
-optimizer = optim.Adam(mlp.model.parameters(), lr=0.005)
+optimizer = optim.Adam(mlp.model.parameters(), lr=0.001)
 
 sucess = 0
-for r in range(300):
-    X0 = [random.random() * 0.3 + 0.2, 0.0, 0.0, 0.0]
+for r in range(50):
+    X0 = [0.1 * random.random(), 0.0, 0.0, 0.0]
     simu = simulation.Simulation(X0)
     stop = False
-    for j in range(100):
+    for j in range(500):
         x = torch.tensor([x for x in simu.get_last()], dtype=torch.float32)
         output = mlp.model(x)
+        output = nn.Sigmoid()(output) - 0.5
+        output = output * 2
         loss = simulation.loss_simultation(output, x, dt_command)
         stop = not simu.step(output.item(), dt_command)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         if stop:
-            print("stop")
+            print("stop ", j)
             break
     if not stop:
         sucess += 1

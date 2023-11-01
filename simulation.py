@@ -13,14 +13,14 @@ fair = 0.0  # friction coefficient air [N/m.s^-1 ]
 fplexi = 0.5  # friction coefficient Plexiglas x Steel [N/N.m.s^-1 ]
 
 ## Bar parameters ##
-l_bar = 2.0  # length of bar [m]
+l_bar = 0.5  # length of bar [m]
 m_bar = 0.5  # [kg]
 
 fb = fair * l_bar**3 / 3.0  # Moment from friction force [N.m/rad.s^-1 ]
 Jb = m_bar * l_bar**2 / 12.0  # Moment of inertia of bar in G [kg.m^2]
 
 ## Cart parameters ##
-m_cart = 0.5  # [kg]
+m_cart = 0.3  # [kg]
 
 fcc = m_cart * g * fplexi  # friction of cart with grown [N/m.s^-1 ]
 
@@ -29,7 +29,7 @@ fcc = m_cart * g * fplexi  # friction of cart with grown [N/m.s^-1 ]
 ################ simaulation parametre ##############
 dt = 0.001  # time tick [s]
 sim_max = 20.0  # simulation time
-angle_max = 30
+angle_max = 20
 #####################################################
 
 
