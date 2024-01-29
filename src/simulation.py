@@ -7,7 +7,7 @@ from scipy.integrate import odeint
 import torch
 import torch.nn as nn
 
-from utils import csv_header
+from src.utils import DT_COMMAND, NB_ACTION, CSV_HEADER
 
 ################ Model parameters ###################
 
@@ -32,14 +32,17 @@ R_roue_courroie = 0.5
 reduc = 0.01
 K_motor = 0.0184
 R_motor = 5.5
+U_max = 12
 #####################################################
 
 ################ simaulation parametre ##############
 dt_simu = 0.01  # time tick [s]
+Theta_0_range = (np.radians(1), np.radians(5))
+dTheta_0_range = (0, 0)
 
 angle_max = 20  # angle max
-x_max = 0.2  # angle max
-time_max = 10  # time max
+x_max = 0.3  # x max
+time_max = 10.0  # time max
 #####################################################
 
 
@@ -74,14 +77,22 @@ def F(X, _, U):
 
 
 class Simulation:
-    def __init__(self, X0):
-        self.X = X0
+    def __init__(self):
+        self.X = np.array(
+            [
+                np.random.uniform(Theta_0_range[0], Theta_0_range[1]),
+                np.random.uniform(dTheta_0_range[0], dTheta_0_range[1]),
+                0,
+                0,
+            ]
+        )  # X=[θ, dθ/dt, x, dx/dt]
         self.file_path = self._init_file()
         self.time = 0.0
         self.episode = 0
 
-    def step(self, U_command, dt_command):
-        T = np.arange(self.time, self.time + dt_command + dt_simu, dt_simu)
+    def step(self, action):
+        U_command = (action * 2 * U_max / (NB_ACTION - 1)) - U_max
+        T = np.arange(self.time, self.time + DT_COMMAND + dt_simu, dt_simu)
         sol = odeint(F, self.X, T, args=(U_command,))
         self._register_step(sol[1:], T[1:], U_command)
         self.X = sol[-1]
@@ -91,31 +102,38 @@ class Simulation:
     def get_state(self):
         return self.X
 
-    def reset(self, X0):
-        self.X = X0
+    def reset(self):
+        self.X = np.array(
+            [
+                np.random.uniform(Theta_0_range[0], Theta_0_range[1]),
+                np.random.uniform(dTheta_0_range[0], dTheta_0_range[1]),
+                0,
+                0,
+            ]
+        )
         self.time = 0.0
         self.episode += 1
 
     def _register_step(self, X, T, U_command):
         lines_to_add = [
             {
-                "EPISODE": self.episode,
-                "TIME": T[index],
-                "THETA": x[0],
-                "dTHETA/dt": x[1],
-                "X": x[2],
-                "dX/dt": x[3],
-                "U_command": U_command,
+                CSV_HEADER.EPISODE: self.episode,
+                CSV_HEADER.TIME: T[index],
+                CSV_HEADER.THETA: x[0],
+                CSV_HEADER.dTHETA: x[1],
+                CSV_HEADER.X: x[2],
+                CSV_HEADER.dX: x[3],
+                CSV_HEADER.U_command: U_command,
             }
             for (index, x) in enumerate(X)
         ]
         with open(self.file_path, "a", newline="") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=csv_header)
+            writer = csv.DictWriter(csvfile, fieldnames=[el.value for el in CSV_HEADER])
             for line in lines_to_add:
                 writer.writerow(line)
 
     def _is_termined(self):
-        return abs(self.X[0]) > np.radians(angle_max) and abs(self.X[2]) > x_max
+        return abs(self.X[0]) > np.radians(angle_max) or abs(self.X[2]) > x_max
 
     def _is_truncated(self):
         return self.time > time_max
@@ -131,13 +149,6 @@ class Simulation:
             file_path = f"./data/simu_{i}.csv"
 
         with open(file_path, "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=csv_header)
+            writer = csv.DictWriter(f, fieldnames=[el.value for el in CSV_HEADER])
             writer.writeheader()
-
         return file_path
-
-
-X0 = np.array([0.01, 0.0, 0.0, 0.0])
-simu = Simulation(X0=X0)
-simu.step(5.0, 10 * dt_simu)
-simu.step(0.0, 3.0)

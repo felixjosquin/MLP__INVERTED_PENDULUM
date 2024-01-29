@@ -7,7 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-vit = 1.0
+from src.utils import CSV_HEADER
+
+vit = 2
 
 
 class Draw:
@@ -18,7 +20,7 @@ class Draw:
 
     @staticmethod
     def _init_X(simu_number, eps_number):
-        if simu_number:
+        if simu_number is not None:
             df = pd.read_csv(f"./data/simu_{simu_number}.csv")
         else:
             i = 0
@@ -28,23 +30,26 @@ class Draw:
                 file_path = f"./data/simu_{i}.csv"
             df = pd.read_csv(f"./data/simu_{i-1}.csv")
         eps_cond = (
-            df["EPISODE"] == eps_number
-            if eps_number
-            else df["EPISODE"] == df["EPISODE"].max()
+            df[CSV_HEADER.EPISODE] == eps_number
+            if eps_number is not None
+            else df[CSV_HEADER.EPISODE] == df[CSV_HEADER.EPISODE].max()
         )
         return (
             df.loc[eps_cond],
-            simu_number if simu_number else i,
-            eps_number if eps_number else df["EPISODE"].max(),
+            simu_number if simu_number is not None else i - 1,
+            eps_number if eps_number is not None else df[CSV_HEADER.EPISODE].max(),
         )
 
     def draw_animation(self):
         fig, ax = plt.subplots()
-        num_frames = len(self.df_X)
+        df_X = self.df_X.loc[
+            :, [CSV_HEADER.TIME.value, CSV_HEADER.THETA.value, CSV_HEADER.X.value]
+        ]
+        num_frames = len(df_X)
 
         def update(frame):
             plt.clf()
-            X = self.df_X.loc[frame, ["TIME", "THETA", "X"]].to_numpy()
+            X = df_X.iloc[frame * vit].to_numpy()
             plot_cart(
                 X, f"Simulation n°{self.simu_number}  Episode n°{self.eps_number}"
             )
@@ -52,8 +57,8 @@ class Draw:
         animation = FuncAnimation(
             fig,
             update,
-            frames=list(range(num_frames)),
-            interval=10 / vit,
+            frames=list(range(num_frames // vit)),
+            interval=10,
         )
 
         def handle(event):
@@ -75,7 +80,15 @@ class Draw:
 
         time, theta, dtheta, X, dX, U = np.transpose(
             self.df_X.loc[
-                :, ["TIME", "THETA", "dTHETA/dt", "X", "dX/dt", "U_command"]
+                :,
+                [
+                    CSV_HEADER.TIME,
+                    CSV_HEADER.THETA,
+                    CSV_HEADER.dTHETA,
+                    CSV_HEADER.X,
+                    CSV_HEADER.dX,
+                    CSV_HEADER.U_command,
+                ],
             ].to_numpy()
         )
 
