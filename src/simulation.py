@@ -17,28 +17,34 @@ fair = 0.0  # friction coefficient air [N/m.s^-1 ]
 fplexi = 0.5  # friction coefficient Plexiglas x Steel [N/N.m.s^-1 ]
 
 ## Bar parameters ##
-l_bar = 0.5  # length of bar [m]
-m_bar = 0.5  # weight of bar[kg]
+l_bar = 0.20  # length of bar [m]
+m_bar = 0.072  # weight of bar[kg]
 
 fb = fair * l_bar**3 / 3.0  # Moment from friction force [N.m/rad.s^-1]
 Jb = m_bar * l_bar**2 / 12.0  # Moment of inertia of bar in G [kg.m^2]
 
 ## Cart parameters ##
-m_cart = 0.3  # [kg]
+m_cart = 0.230  # [kg]
 fcc = m_cart * g * fplexi  # friction of cart with grown [N/m.s^-1]
 
 ## Courroie parameters ##
-R_roue_courroie = 0.5
-reduc = 0.01
-K_motor = 0.0184
-R_motor = 5.5
+R_roue_courroie = 0.00635
+reduc = 1.0
+K_motor = 0.38197
+R_motor = 7.5
 U_max = 12
 #####################################################
 
 ################ simaulation parametre ##############
-dt_simu = 0.01  # time tick [s]
-Theta_0_range = (np.radians(1), np.radians(5))
+dt_simu = 0.005  # time tick [s]
+Theta_0_range = (3, 6)
 dTheta_0_range = (0, 0)
+#####################################################
+
+
+################ DNQ parametre ##############
+angle_good = 5
+
 
 angle_max = 20  # angle max
 x_max = 0.3  # x max
@@ -78,13 +84,16 @@ def F(X, _, U):
 
 class Simulation:
     def __init__(self):
-        self.X = np.array(
-            [
-                np.random.uniform(Theta_0_range[0], Theta_0_range[1]),
-                np.random.uniform(dTheta_0_range[0], dTheta_0_range[1]),
-                0,
-                0,
-            ]
+        self.X = np.multiply(
+            np.radians(
+                [
+                    np.random.uniform(*Theta_0_range),
+                    np.random.uniform(*dTheta_0_range),
+                    0,
+                    0,
+                ]
+            ),
+            np.random.choice([1, -1], (4,)),
         )  # X=[θ, dθ/dt, x, dx/dt]
         self.file_path = self._init_file()
         self.time = 0.0
@@ -103,13 +112,16 @@ class Simulation:
         return self.X
 
     def reset(self):
-        self.X = np.array(
-            [
-                np.random.uniform(Theta_0_range[0], Theta_0_range[1]),
-                np.random.uniform(dTheta_0_range[0], dTheta_0_range[1]),
-                0,
-                0,
-            ]
+        self.X = np.multiply(
+            np.radians(
+                [
+                    np.random.uniform(*Theta_0_range),
+                    np.random.uniform(*dTheta_0_range),
+                    0,
+                    0,
+                ]
+            ),
+            np.random.choice([1, -1], (4,)),
         )
         self.time = 0.0
         self.episode += 1
@@ -139,7 +151,7 @@ class Simulation:
         return self.time > time_max
 
     def _get_reward(self):
-        return 1 - int(self._is_termined())  # +1 if pendulum don't fall
+        return 1 - int(self._is_termined())  # +1 if pendulum don't fall or x too large
 
     def _init_file(self):
         i = 0

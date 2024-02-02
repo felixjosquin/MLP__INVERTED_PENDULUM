@@ -41,8 +41,9 @@ class Agent:
 
     def train_batch(self):
         if len(self.memory) < BATCH_SIZE:
-            return
-        mini_sample = random.sample(self.memory, BATCH_SIZE)  # list of tuples
+            mini_sample = mini_sample = self.memory
+        else:
+            mini_sample = random.sample(self.memory, BATCH_SIZE)  # list of tuples
         states, actions, rewards, next_states, termined = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, termined)
 

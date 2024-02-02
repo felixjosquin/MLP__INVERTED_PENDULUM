@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import os
 
 from src.utils import GAMMA, LR, NB_ACTION
 
@@ -23,7 +22,7 @@ class QTrainer:
     def __init__(self, model):
         self.model = model
         self.optimizer = optim.Adam(model.parameters(), lr=LR)
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.SmoothL1Loss()
 
     def train_step(self, states, actions, rewards, next_states, termined):
         states = torch.tensor(states, dtype=torch.float)
