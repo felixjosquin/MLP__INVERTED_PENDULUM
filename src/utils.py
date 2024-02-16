@@ -1,6 +1,6 @@
 from enum import Enum
 
-DT_COMMAND = 0.01
+DT_COMMAND = 0.02
 
 
 class CSV_HEADER(str, Enum):
@@ -15,15 +15,17 @@ class CSV_HEADER(str, Enum):
 
 ##### HYPERPAREMTER #####
 NB_ACTION = 5
-HIDDEN_LAYER = 500
+HIDDEN_LAYER = 256
 
-GAMMA = 0.99
-BATCH_SIZE = 250
-MEMORY_DEQUE = 100_000
+GAMMA = 0.995
+BATCH_SIZE = 1024
+MEMORY_DEQUE = 50_000
 
-LR = 0.05
+LR = 0.001
+
+UPDATE_INTERVAL = 1000
 
 EPS_START = 0.9
-EPS_END = 0.0
-EPS_DECAY = 5000
+EPS_END = 0.05
+EPS_DECAY = 4000
 #########################

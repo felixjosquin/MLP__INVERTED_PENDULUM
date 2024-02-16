@@ -72,6 +72,7 @@ class Draw:
 
         fig.canvas.mpl_connect("key_press_event", handle)
         plt.show()
+        # animation.save("./data/animation.gif", writer="imagemagick", fps=30)
 
     def draw_graph(self):
         fig = plt.figure()

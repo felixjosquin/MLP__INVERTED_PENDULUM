@@ -4,10 +4,7 @@ import csv
 import numpy as np
 from scipy.integrate import odeint
 
-import torch
-import torch.nn as nn
-
-from src.utils import DT_COMMAND, NB_ACTION, CSV_HEADER
+from src.utils import DT_COMMAND, CSV_HEADER
 
 ################ Model parameters ###################
 
@@ -32,18 +29,18 @@ R_roue_courroie = 0.00635
 reduc = 1.0
 K_motor = 0.38197
 R_motor = 7.5
-U_max = 12
+U_max = 12.0
 #####################################################
 
 ################ simaulation parametre ##############
 dt_simu = 0.005  # time tick [s]
-Theta_0_range = (3, 6)
+Theta_0_range = (3, 5)
 dTheta_0_range = (0, 0)
 #####################################################
 
 
 ################ DNQ parametre ##############
-angle_good = 5
+x_good = 0.2
 
 
 angle_max = 20  # angle max
@@ -61,22 +58,37 @@ time_max = 10.0  # time max
 # d²x/dt² = b + beta  * d²θ/dt²  ==> d²x/dt² = (b + beta  * a) / (1 - alpha * beta)
 
 
+# def F(X, _, U):
+#     theta, dtheta, _, dx = X
+#     w_motor = dx / (R_roue_courroie * reduc)
+#     U_m = w_motor * K_motor
+#     I = (U - U_m) / R_motor
+#     F = I * K_motor / (reduc * R_roue_courroie)
+#     a = (3.0 * g * np.sin(theta) / (2 * l_bar)) - (fb * dtheta / (4 * Jb))
+#     b = (F - fcc * dx - 0.5 * m_bar * l_bar * np.sin(theta) * dtheta**2) / (
+#         m_cart + m_bar
+#     )
+#     alpha = 3 * np.cos(theta) / (2 * l_bar)
+#     beta = 0.5 * l_bar * m_bar * np.cos(theta) / (m_bar + m_cart)
+
+#     d2tehta = (a + alpha * b) / (1 - alpha * beta)
+#     d2x = (b + beta * a) / (1 - alpha * beta)
+#     return [dtheta, d2tehta, dx, d2x]
+
+
+#####################################################
+
+tau = 0.0434
+p_positif = np.poly1d([9.93417956e-3, 49.50761959e-3])
+p_negatif = np.poly1d([8.07755163e-3, -64.7761631e-3])
+
+
 def F(X, _, U):
     theta, dtheta, _, dx = X
-    w_motor = dx / (R_roue_courroie * reduc)
-    U_m = w_motor * K_motor
-    I = (U - U_m) / R_motor
-    F = I * K_motor / (reduc * R_roue_courroie)
-    a = (3.0 * g * np.sin(theta) / (2 * l_bar)) - (fb * dtheta / (4 * Jb))
-    b = (F - fcc * dx - 0.5 * m_bar * l_bar * np.sin(theta) * dtheta**2) / (
-        m_cart + m_bar
-    )
-    alpha = 3 * np.cos(theta) / (2 * l_bar)
-    beta = 0.5 * l_bar * m_bar * np.cos(theta) / (m_bar + m_cart)
-
-    d2tehta = (a + alpha * b) / (1 - alpha * beta)
-    d2x = (b + beta * a) / (1 - alpha * beta)
-    return [dtheta, d2tehta, dx, d2x]
+    dx_c = p_positif(U) if U > 0 else p_negatif(U) if U < 0 else 0.0
+    d2x = (dx_c - dx) / tau
+    d2theta = (3 * g * np.sin(theta) + 3 * d2x * np.cos(theta)) / (2 * l_bar)
+    return [dtheta, d2theta, dx, d2x]
 
 
 #####################################################
@@ -100,7 +112,8 @@ class Simulation:
         self.episode = 0
 
     def step(self, action):
-        U_command = (action * 2 * U_max / (NB_ACTION - 1)) - U_max
+        actions = [-8.0, -6.0, 0, 6.0, 8.0]
+        U_command = actions[action]
         T = np.arange(self.time, self.time + DT_COMMAND + dt_simu, dt_simu)
         sol = odeint(F, self.X, T, args=(U_command,))
         self._register_step(sol[1:], T[1:], U_command)
@@ -151,7 +164,11 @@ class Simulation:
         return self.time > time_max
 
     def _get_reward(self):
-        return 1 - int(self._is_termined())  # +1 if pendulum don't fall or x too large
+        return (
+            3.0 * (np.radians(angle_max) - abs(self.X[0]))
+            + 1.0 * int(abs(self.X[2]) < x_good)
+            + -5.0 * int(self._is_termined())
+        )
 
     def _init_file(self):
         i = 0
@@ -164,3 +181,7 @@ class Simulation:
             writer = csv.DictWriter(f, fieldnames=[el.value for el in CSV_HEADER])
             writer.writeheader()
         return file_path
+
+
+def map_range(x, in_min, in_max, out_min, out_max):
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min

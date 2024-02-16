@@ -1,16 +1,15 @@
 from collections import deque
 import random
 import numpy as np
-import torch
+
 
 from src.simulation import Simulation
-from src.mlp import Linear_QNet, QTrainer
+from src.mlp import QTrainer
 from src.utils import (
     BATCH_SIZE,
     EPS_DECAY,
     EPS_END,
     EPS_START,
-    HIDDEN_LAYER,
     MEMORY_DEQUE,
     NB_ACTION,
 )
@@ -20,32 +19,33 @@ class Agent:
     def __init__(self):
         self.memory = deque(maxlen=MEMORY_DEQUE)
         self.steps_done = 0
-        self.model = Linear_QNet(HIDDEN_LAYER)
-        self.trainer = QTrainer(self.model)
+        self.trainer = QTrainer()
 
     def get_action(self, state):
-        self.steps_done += 1
         eps_threshold = EPS_END + (EPS_START - EPS_END) * np.exp(
             -self.steps_done / EPS_DECAY
         )
         if np.random.rand() > eps_threshold:
-            state0 = torch.tensor(state, dtype=torch.float)
-            with torch.no_grad():
-                action = torch.argmax(self.model(state0)).item()
+            action = self.trainer.do_a_prediction(state)
         else:
             action = np.random.randint(NB_ACTION - 1)
+        self.steps_done += 1
         return action
 
-    def train_short(self, state, action, reward, next_state, termined):
-        self.trainer.train_step([state], [action], [reward], [next_state], [termined])
+    def train_short(self, *arg):
+        self.trainer.train_step(*(np.array([a]) for a in arg))
 
     def train_batch(self):
         if len(self.memory) < BATCH_SIZE:
-            mini_sample = mini_sample = self.memory
+            mini_sample = list(self.memory)
         else:
             mini_sample = random.sample(self.memory, BATCH_SIZE)  # list of tuples
-        states, actions, rewards, next_states, termined = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, termined)
+        batchs = [mini_sample[i : i + 50] for i in range(0, len(mini_sample), 50)]
+        for batch in batchs:
+            states, actions, rewards, next_states, termined = (
+                np.array(x) for x in zip(*batch)
+            )
+            self.trainer.train_step(states, actions, rewards, next_states, termined)
 
     def remember(self, state, action, reward, next_state, is_termined):
         self.memory.append((state, action, reward, next_state, is_termined))
@@ -54,6 +54,7 @@ class Agent:
 def train():
     agent = Agent()
     simu = Simulation()
+
     while True:
         state_old = simu.get_state()
         action = agent.get_action(state_old)
