@@ -1,10 +1,5 @@
-import sys
 import argparse
-
-
-import numpy as np
 from src.agent import train
-from src.simulation import Simulation
 from src.draw import Draw
 
 
