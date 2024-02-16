@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -72,3 +73,14 @@ class QTrainer:
     def _update_target(self):
         self.target_model.load_state_dict(self.model.state_dict())
         self.nb_step_unupdate = 0
+
+    def register_model(self, episode, time):
+        folder_path = "./data/models"
+        file_name = f"model_{episode}__{time}.pth"
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print(f"Folder '{folder_path}' created.")
+
+        # Create the file inside the folder
+        file_path = os.path.join(folder_path, file_name)
+        torch.save(self.model.state_dict(), file_path)

@@ -21,14 +21,14 @@ class Draw:
     @staticmethod
     def _init_X(simu_number, eps_number):
         if simu_number is not None:
-            df = pd.read_csv(f"./data/simu_{simu_number}.csv")
+            df = pd.read_csv(f"./data/simulations/simu_{simu_number}.csv")
         else:
             i = 0
-            file_path = f"./data/simu_0.csv"
+            file_path = f"./data/simulations/simu_0.csv"
             while os.path.exists(file_path):
                 i += 1
-                file_path = f"./data/simu_{i}.csv"
-            df = pd.read_csv(f"./data/simu_{i-1}.csv")
+                file_path = f"./data/simulations/simu_{i}.csv"
+            df = pd.read_csv(f"./data/simulations/simu_{i-1}.csv")
         eps_cond = (
             df[CSV_HEADER.EPISODE] == eps_number
             if eps_number is not None
@@ -72,7 +72,7 @@ class Draw:
 
         fig.canvas.mpl_connect("key_press_event", handle)
         plt.show()
-        # animation.save("./data/animation.gif", writer="imagemagick", fps=30)
+        # animation.save("./data/simulations/animation.gif", writer="imagemagick", fps=30)
 
     def draw_graph(self):
         fig = plt.figure()

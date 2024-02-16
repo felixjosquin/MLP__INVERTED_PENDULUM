@@ -34,8 +34,8 @@ U_max = 12.0
 
 ################ simaulation parametre ##############
 dt_simu = 0.005  # time tick [s]
-Theta_0_range = (3, 5)
-dTheta_0_range = (0, 0)
+Theta_0_range = (3.0, 5.0)
+dTheta_0_range = (0.0, 1.0)
 #####################################################
 
 
@@ -112,7 +112,7 @@ class Simulation:
         self.episode = 0
 
     def step(self, action):
-        actions = [-8.0, -6.0, 0, 6.0, 8.0]
+        actions = [-10.0, -7.0, 0, 7.0, 10.0]
         U_command = actions[action]
         T = np.arange(self.time, self.time + DT_COMMAND + dt_simu, dt_simu)
         sol = odeint(F, self.X, T, args=(U_command,))
@@ -165,23 +165,19 @@ class Simulation:
 
     def _get_reward(self):
         return (
-            3.0 * (np.radians(angle_max) - abs(self.X[0]))
+            5.0 * ((np.radians(angle_max) - abs(self.X[0])) / np.radians(angle_max))
             + 1.0 * int(abs(self.X[2]) < x_good)
-            + -5.0 * int(self._is_termined())
+            - 5.0 * int(self._is_termined())
         )
 
     def _init_file(self):
         i = 0
-        file_path = f"./data/simu_0.csv"
+        file_path = f"./data/simulations/simu_0.csv"
         while os.path.exists(file_path):
             i += 1
-            file_path = f"./data/simu_{i}.csv"
+            file_path = f"./data/simulations/simu_{i}.csv"
 
         with open(file_path, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=[el.value for el in CSV_HEADER])
             writer.writeheader()
         return file_path
-
-
-def map_range(x, in_min, in_max, out_min, out_max):
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
