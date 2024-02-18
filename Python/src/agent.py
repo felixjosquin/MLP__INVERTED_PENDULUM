@@ -58,9 +58,9 @@ class Agent:
     def need_register_mlp(self):
         return sum(self.times[-5:]) > self.sum_max_time
 
-    def register__mlp(self, episode):
+    def register__mlp(self, simu_number):
         self.sum_max_time = sum(self.times[-5:])
-        self.trainer.register_model(episode, sum(self.times[-5:]))
+        self.trainer.register_model(simu_number)
 
 
 def train():
@@ -77,7 +77,7 @@ def train():
         if is_termined or is_truncated:
             agent.add_time(simu.time)
             if simu.episode > 50 and agent.need_register_mlp():
-                agent.register__mlp(simu.episode)
+                agent.register__mlp(simu.simu_number)
 
             agent.train_batch()
             print(f"episode : {simu.episode} | time : {simu.time}")

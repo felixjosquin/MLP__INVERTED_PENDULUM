@@ -1,6 +1,6 @@
 from enum import Enum
 
-DT_COMMAND = 0.02
+DT_COMMAND = 0.05
 
 
 class CSV_HEADER(str, Enum):

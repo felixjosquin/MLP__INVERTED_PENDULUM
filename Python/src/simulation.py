@@ -107,6 +107,7 @@ class Simulation:
             ),
             np.random.choice([1, -1], (4,)),
         )  # X=[θ, dθ/dt, x, dx/dt]
+        self.simu_number = 0
         self.file_path = self._init_file()
         self.time = 0.0
         self.episode = 0
@@ -175,7 +176,7 @@ class Simulation:
         while os.path.exists(file_path):
             i += 1
             file_path = f"./data/simulations/simu_{i}.csv"
-
+        self.simu_number = i
         with open(file_path, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=[el.value for el in CSV_HEADER])
             writer.writeheader()
