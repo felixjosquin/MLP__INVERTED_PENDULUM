@@ -13,20 +13,22 @@ Sensor::Sensor(int pin_encX_W, int pin_encX_G, int pin_encT_W, int pin_encT_O, i
     _deltaTheta_available = false;
 
     pinMode(_pin_button, INPUT);
+    _time = new unsigned long();
 }
 
-void Sensor::init_X(Motor *motor)
+void Sensor::initX(Motor *motor)
 {
-    motor->write_motor(-LOW_SPEED);
+    _encodTheta->write(-ENCOD_THETA_PTS_REV / 2);
+    motor->writeMotor(-LOW_SPEED);
     while (digitalRead(_pin_button) == LOW)
     {
     }
-    motor->write_motor(0);
+    motor->writeMotor(0);
     _encodX->write(-MAX_X / 2);
-    go_to(motor, 0);
+    goTo(motor, 0);
 }
 
-void Sensor::go_to(Motor *motor, int value)
+void Sensor::goTo(Motor *motor, int value)
 {
     if (abs(value) > MAX_X * 0.8 / 2)
     {
@@ -35,59 +37,81 @@ void Sensor::go_to(Motor *motor, int value)
     int delta = _encodX->read() - value, command;
     while (abs(delta) > 800)
     {
-        command = -MAX_SPEED * ((delta > 0) - (delta < 0));
-        motor->write_motor(command);
+        command = -LOW_SPEED * ((delta > 0) - (delta < 0));
+        motor->writeMotor(command);
         delta = _encodX->read() - value;
     }
-    motor->write_motor(0);
+    motor->writeMotor(0);
 }
 
 float Sensor::getTheta()
 {
-    int encodTheta_value = _encodTheta->read();
-    while (encodTheta_value > ENCOD_THETA_PTS_HALF_REV || encodTheta_value <= -ENCOD_THETA_PTS_HALF_REV)
+    while (abs(_encodTheta->read()) > ENCOD_THETA_PTS_REV / 2)
     {
-        int offset = 2 * (1 - 2 * int(encodTheta_value > ENCOD_THETA_PTS_HALF_REV)) * ENCOD_THETA_PTS_HALF_REV;
-        _encodTheta->write(encodTheta_value + offset);
-        encodTheta_value += offset;
+        int sign_theta = (_encodTheta->read() > 0) ? 1 : -1;
+        _encodTheta->write(_encodTheta->read() - sign_theta * ENCOD_THETA_PTS_REV);
     }
 
-    return encodTheta_value * 0.09; // value in deg
+    return _encodTheta->read() * 1.57079; // value in 1e-3 rad
 }
 
 float Sensor::getX()
 {
-    int encodX_value = _encodX->read();
-    return encodX_value * 0.0247202153279501; // value in mm
+    return _encodX->read() * 0.02472; // value in mm
 }
 
-void Sensor::getDerivate() // CARFULLL TAKE 5 ms
+bool Sensor::isTermined()
 {
-    int beforeX = _encodX->read();
-    int beforeTheta = _encodTheta->read();
-    delay(5);
-    _deltaX = _encodX->read() - beforeX;
-    _deltaTheta = _encodTheta->read() - beforeTheta;
-    _deltaTheta_available = true;
-    _deltaX_available = true;
+    return abs(_encodX->read()) > 6000 || abs(_encodTheta->read()) > 222; // -148mm<x<148mm and -19,98deg<theta<19,98 deg
 }
 
-float Sensor::getdX(void (*error)())
+bool Sensor::isTruncted()
 {
-    if (!_deltaX_available)
-    {
-        error();
-    }
-    _deltaX_available = false;
-    return _deltaX * 0.0247202153279501 * 200;
+    return this->getTime() > 5.e6;
 }
 
-float Sensor::getdTheta(void (*error)())
+void Sensor::resetTime()
 {
-    if (!_deltaTheta_available)
-    {
-        error();
-    }
-    _deltaTheta_available = false;
-    return _deltaTheta * 0.09 * 100.;
+    *_time = micros();
 }
+
+unsigned long Sensor::getTime()
+{
+    return micros() - *_time;
+}
+
+// void Sensor::getDerivate()
+// {
+//     int beforeX = _encodX->read();
+//     unsigned long time = micros();
+//     while (abs(_encodX->read() - beforeX) < 5)
+//     {
+//         delayMicroseconds(10);
+//     }
+//     _deltaX = micros() - time;
+
+//     _deltaTheta = micros() - time;
+
+//     _deltaTheta_available = true;
+//     _deltaX_available = true;
+// }
+
+// float Sensor::getdX(void (*error)())
+// {
+//     if (!_deltaX_available)
+//     {
+//         error();
+//     }
+//     _deltaX_available = false;
+//     return 24720.2153279501 * 5. / _deltaX; // value in mm.s-1 (_deltaX = time between 3 point )
+// }
+
+// float Sensor::getdTheta(void (*error)())
+// {
+//     if (!_deltaTheta_available)
+//     {
+//         error();
+//     }
+//     _deltaTheta_available = false;
+//     return _deltaTheta * 0.314159265358979; // value in rad.s-1
+// }

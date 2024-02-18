@@ -4,7 +4,7 @@ import csv
 import numpy as np
 from scipy.integrate import odeint
 
-from src.utils import DT_COMMAND, CSV_HEADER
+from src.utils import ACTIONS, DT_COMMAND, CSV_HEADER
 
 ################ Model parameters ###################
 
@@ -112,8 +112,7 @@ class Simulation:
         self.episode = 0
 
     def step(self, action):
-        actions = [-10.0, -7.0, 0, 7.0, 10.0]
-        U_command = actions[action]
+        U_command = ACTIONS[action]
         T = np.arange(self.time, self.time + DT_COMMAND + dt_simu, dt_simu)
         sol = odeint(F, self.X, T, args=(U_command,))
         self._register_step(sol[1:], T[1:], U_command)

@@ -28,4 +28,7 @@ UPDATE_INTERVAL = 1500
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 4000
+
+ACTIONS = [-10.0, -7.0, 0, 7.0, 10.0]
+
 #########################

@@ -4,24 +4,62 @@
 #include <Serial_USB.h>
 #include <Sensor.h>
 
-void wait_start()
+USBCom::USBCom()
+{
+    _command = 0;
+}
+
+void USBCom::waitBeginning()
 {
     String receivedString = "";
-    bool wait = true;
-    while (wait)
+    while (true)
     {
         if (Serial.available())
         {
-            char incomingChar = Serial.read();
-            receivedString += incomingChar;
-            if (receivedString.endsWith("start"))
+            receivedString = Serial.readStringUntil('\n');
+            if (receivedString == "start")
             {
-                wait = false;
+                Serial.println("start");
+                return;
             }
         }
     }
 }
 
-void send_data(Sensor *sensor){
+// status 0 = No need new command
+// status 1 = Need new command
+// status 2 = End episode
+// status 3 = error
+void USBCom::sendData(Sensor *sensor, int status)
+{
 
+    JsonDocument jsonData;
+
+    jsonData["s"] = status;
+    jsonData["t"] = sensor->getTime();
+    jsonData["x"] = sensor->getX();
+    jsonData["th"] = sensor->getTheta();
+    jsonData["c"] = _command;
+
+    serializeJson(jsonData, Serial);
+    Serial.print('\n');
+    Serial.flush();
 };
+
+int USBCom::receiveCommand(void (*error)())
+{
+    String jsonString = Serial.readStringUntil('\n');
+    if (!jsonString.length())
+    {
+        error();
+    }
+    JsonDocument doc;
+    deserializeJson(doc, jsonString);
+    _command = doc["c"];
+    return _command;
+}
+
+void USBCom::endEpisode()
+{
+    _command = 0;
+}

@@ -4,14 +4,13 @@
 
 #define LOW_SPEED 100
 #define MAX_SPEED 255
-#define NORMAL_SPEED 150
 
 class Motor
 {
 public:
     Motor(int pin_ENB, int pin_1, int pin_2);
-    void write_motor(int state);
-    int read_motor();
+    void writeMotor(int state);
+    int readMotor();
 
 private:
     int _state;

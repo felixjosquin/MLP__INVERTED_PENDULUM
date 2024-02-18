@@ -14,7 +14,7 @@ Motor::Motor(int pin_ENB, int pin_1, int pin_2)
     _pin_2 = pin_2;
 }
 
-void Motor::write_motor(int new_state)
+void Motor::writeMotor(int new_state)
 {
     if (new_state >= 0)
     {
@@ -30,7 +30,7 @@ void Motor::write_motor(int new_state)
     _state = new_state;
 }
 
-int Motor::read_motor()
+int Motor::readMotor()
 {
     return _state;
 }

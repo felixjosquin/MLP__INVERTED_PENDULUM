@@ -2,7 +2,17 @@
 #define SERIAL_USB_H
 class Sensor;
 
-void wait_start();
-void send_data(Sensor *sensor);
+class USBCom
+{
+public:
+    USBCom();
+    void sendData(Sensor *sensor, int status);
+    int receiveCommand(void (*error)());
+    void waitBeginning();
+    void endEpisode();
+
+private:
+    int _command;
+};
 
 #endif
