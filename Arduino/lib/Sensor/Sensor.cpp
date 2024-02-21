@@ -67,7 +67,7 @@ bool Sensor::isTermined()
 
 bool Sensor::isTruncted()
 {
-    return this->getTime() > 5.e6;
+    return false;
 }
 
 void Sensor::resetTime()
@@ -79,39 +79,3 @@ unsigned long Sensor::getTime()
 {
     return micros() - *_time;
 }
-
-// void Sensor::getDerivate()
-// {
-//     int beforeX = _encodX->read();
-//     unsigned long time = micros();
-//     while (abs(_encodX->read() - beforeX) < 5)
-//     {
-//         delayMicroseconds(10);
-//     }
-//     _deltaX = micros() - time;
-
-//     _deltaTheta = micros() - time;
-
-//     _deltaTheta_available = true;
-//     _deltaX_available = true;
-// }
-
-// float Sensor::getdX(void (*error)())
-// {
-//     if (!_deltaX_available)
-//     {
-//         error();
-//     }
-//     _deltaX_available = false;
-//     return 24720.2153279501 * 5. / _deltaX; // value in mm.s-1 (_deltaX = time between 3 point )
-// }
-
-// float Sensor::getdTheta(void (*error)())
-// {
-//     if (!_deltaTheta_available)
-//     {
-//         error();
-//     }
-//     _deltaTheta_available = false;
-//     return _deltaTheta * 0.314159265358979; // value in rad.s-1
-// }

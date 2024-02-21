@@ -3,8 +3,11 @@ import json
 import os
 import serial
 import numpy as np
+from src.agent import Agent
+from src.simulation import get_reward
 
-from utils import CSV_HEADER
+from src.mlp import QTrainer
+from src.utils import ACTIONS, CSV_HEADER
 
 
 class connect_USB:
@@ -22,7 +25,6 @@ class connect_USB:
 
     def send_data(self, dic):
         json_string = json.dumps(dic)
-        print(f"send : {json_string}")
         json_string += "\n"
         self.ser.write(json_string.encode("utf-8"))
         self.ser.flush()
@@ -31,7 +33,6 @@ class connect_USB:
         json_string = ""
         while not json_string:
             json_string = self.ser.readline().decode("utf-8")
-        print(f"recv : {json_string[:-1]}")
         return json.loads(json_string)
 
     def stop(self):
@@ -41,21 +42,23 @@ class connect_USB:
 
 
 class Middleware:
-    def __init__(self):
+    def __init__(self, predict_function, learn_function=None):
         self.episode_states = []
         self.path = self._init_file()
         self.episode = 0
+        self.predict_function = predict_function
+        self.learn_function = learn_function
 
     def step(self, output):
         status = output.get("s", None)
         match status:
             case 1:  # rev data and need to send new command
-                self.rcv_data(output)
-                command = self.get_command()
+                state = self.rcv_data(output)
+                command = self.get_command(state)
                 return {"c": command}
             case 2:  # end of episode
-                self.rcv_data(output)
-                self.end_episode()
+                state = self.rcv_data(output)
+                self.end_episode(state)
                 return None
             case 3:
                 raise ArduinoException
@@ -67,7 +70,7 @@ class Middleware:
         new_state = {
             "time": output["t"] / 1.0e6,
             "x": output["x"] / 1.0e3,
-            "theta": output["th"] / 1.0e3,
+            "theta": -output["th"] / 1.0e3,
             "command": output["c"],
         }
         new_state["dx/dt"] = (
@@ -81,22 +84,27 @@ class Middleware:
             if old_state is not None
             else 0.0
         )
-        self.episode_states.append(new_state)
+        return new_state
 
-    def end_episode(self):
-        print(f"-------- End of episode {self.episode} --------")
+    def end_episode(self, state):
+        self.episode_states.append(state)
+        if self.learn_function is not None:
+            self.learn_function(self.episode_states, self.episode)
+        print(
+            f"-------- End of episode {self.episode} : {self.episode_states[-1]['time']:.2f} s --------"
+        )
         self._register_data()
         self.episode += 1
         self.episode_states = []
 
-    def get_command(self):
-        state = np.array(
-            [
-                self.episode_states[-1][key]
-                for key in ["theta", "dtheta/dt", "x", "dx/dt"]
-            ]
+    def get_command(self, state):
+        state_np = np.array(
+            [state[key] for key in ["theta", "dtheta/dt", "x", "dx/dt"]]
         )
-        return test_command(state)
+        action = self.predict_function(state_np)
+        state["action"] = action
+        self.episode_states.append(state)
+        return int(ACTIONS[action] * 255 / 12)
 
     def _init_file(self):
         os.makedirs("./data/real_data", exist_ok=True)
@@ -120,7 +128,7 @@ class Middleware:
                 CSV_HEADER.dTHETA.value: data.get("dtheta/dt"),
                 CSV_HEADER.X.value: data.get("x"),
                 CSV_HEADER.dX.value: data.get("dx/dt"),
-                CSV_HEADER.U_command.value: (data.get("command") * 12 / 255),
+                CSV_HEADER.U_command.value: data.get("command"),
             }
             for data in self.episode_states
         ]
@@ -130,17 +138,64 @@ class Middleware:
                 writer.writerow(line)
 
 
-def test_command(state):
-    command = 150 if state[0] > 0 else -150
-    print(
-        f"    θ:{state[0]:.2f} | dθ/dt:{state[2]:.2f} | x:{state[2]:.2f} | dx/dt:{state[3]:.2f} --> command:{command}"
-    )
-    return command
-
-
-def start():
+def predict(path):
+    trainer = QTrainer(path)
     usbObject = connect_USB()
-    middleware = Middleware()
+
+    def predic_function(state):
+        return trainer.do_a_prediction(state)
+
+    middleware = Middleware(predict_function=predic_function)
+    try:
+        usbObject.start()
+        while True:
+            data = usbObject.read_data()
+            dic_to_send = middleware.step(data)
+            if dic_to_send is not None:
+                usbObject.send_data(dic_to_send)
+
+    except KeyboardInterrupt:
+        print("Exiting...")
+
+    except ArduinoException:
+        print("Arduino have a problem...")
+
+    except NoResponceException:
+        print("No status in arduino response...")
+
+    finally:
+        usbObject.stop()
+
+
+def train_real(path):
+    agent = Agent(path)
+    usbObject = connect_USB()
+
+    def predic_function(state):
+        return agent.get_action(state)
+
+    def learn(states, episode):
+        agent.register__mlp(episode)
+        states = [state for state in states if state["time"] > 1.0]
+        states_np = [
+            np.array([state[key] for key in ["theta", "dtheta/dt", "x", "dx/dt"]])
+            for state in states
+        ]
+        nb_state = len(states)
+        data = (
+            (
+                states_np[index],
+                states[index]["action"],
+                get_reward(states_np[index + 1], index == nb_state - 2),
+                states_np[index + 1],
+                index == nb_state - 2,
+            )
+            for index in range(nb_state - 1)
+        )
+        agent.remember_batch(data)
+        agent.train_batch()
+
+    middleware = Middleware(predict_function=predic_function, learn_function=learn)
     try:
         usbObject.start()
         while True:
@@ -168,6 +223,3 @@ class ArduinoException(Exception):
 
 class NoResponceException(Exception):
     pass
-
-
-start()

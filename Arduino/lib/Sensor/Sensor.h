@@ -20,9 +20,6 @@ public:
     bool isTruncted();
     void resetTime();
     unsigned long getTime();
-    // float getdX(void (*func)());
-    // float getdTheta(void (*func)());
-    // void getDerivate();
 
 private:
     int _pin_button;

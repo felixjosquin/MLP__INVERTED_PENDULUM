@@ -16,10 +16,10 @@ from src.utils import (
 
 
 class Agent:
-    def __init__(self):
+    def __init__(self, path=None):
         self.memory = deque(maxlen=MEMORY_DEQUE)
         self.steps_done = 0
-        self.trainer = QTrainer()
+        self.trainer = QTrainer(path)
         self.times = []
         self.sum_max_time = 0.0
 
@@ -52,15 +52,14 @@ class Agent:
     def remember(self, state, action, reward, next_state, is_termined):
         self.memory.append((state, action, reward, next_state, is_termined))
 
+    def remember_batch(self, batch):
+        self.memory.extend(batch)
+
     def add_time(self, time):
         self.times.append(time)
 
-    def need_register_mlp(self):
-        return sum(self.times[-5:]) > self.sum_max_time
-
-    def register__mlp(self, simu_number):
-        self.sum_max_time = sum(self.times[-5:])
-        self.trainer.register_model(simu_number)
+    def register__mlp(self, epsiode):
+        self.trainer.register_model(epsiode)
 
 
 def train():

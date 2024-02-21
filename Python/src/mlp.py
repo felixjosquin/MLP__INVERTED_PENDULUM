@@ -23,8 +23,10 @@ class Linear_QNet(nn.Module):
 
 
 class QTrainer:
-    def __init__(self):
+    def __init__(self, path=None):
         self.model = Linear_QNet(HIDDEN_LAYER)
+        if path is not None:
+            self.model.load_state_dict(torch.load(path))
         self.target_model = Linear_QNet(HIDDEN_LAYER)
         self.target_model.load_state_dict(self.model.state_dict())
         self.optimizer = optim.Adam(self.model.parameters(), lr=LR)
@@ -74,11 +76,10 @@ class QTrainer:
         self.target_model.load_state_dict(self.model.state_dict())
         self.nb_step_unupdate = 0
 
-    def register_model(self, simu_number):
+    def register_model(self, episode_number):
         folder_path = "./data/models"
-        file_name = f"best_{simu_number}.pth"
+        file_name = f"model_{episode_number}.pth"
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-
         file_path = os.path.join(folder_path, file_name)
         torch.save(self.model.state_dict(), file_path)

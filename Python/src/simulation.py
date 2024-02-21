@@ -42,7 +42,6 @@ dTheta_0_range = (0.0, 1.0)
 ################ DNQ parametre ##############
 x_good = 0.2
 
-
 angle_max = 20  # angle max
 x_max = 0.3  # x max
 time_max = 10.0  # time max
@@ -181,3 +180,11 @@ class Simulation:
             writer = csv.DictWriter(f, fieldnames=[el.value for el in CSV_HEADER])
             writer.writeheader()
         return file_path
+
+
+def get_reward(state, termined):
+    return (
+        5.0 * ((np.radians(angle_max) - abs(state[0])) / np.radians(angle_max))
+        + 1.0 * ((x_max - abs(state[2])) / x_max)
+        - 5.0 * int(termined)
+    )

@@ -32,16 +32,16 @@ void error()
 void setup()
 {
   Serial.begin(115200);
-  Serial.setTimeout(20);
+  Serial.setTimeout(100);
   usbcom->waitBeginning();
   sensor->initX(motor);
 }
 
 void loop()
 {
-  while (abs(sensor->getTheta()) > 34.9)
+  while (abs(sensor->getTheta()) > 200)
   {
-    delay(1);
+    delay(10);
   }
   int status = 1;
   sensor->resetTime();
@@ -69,9 +69,3 @@ void loop()
   usbcom->endEpisode();
   sensor->goTo(motor, 0);
 }
-
-// void loop()
-// {
-//   Serial.println(sensor->getTheta());
-//   delay(100);
-// }
